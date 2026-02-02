@@ -1,129 +1,97 @@
-﻿/*
-               ███████╗░█████╗░██████╗░░█████╗░███████╗  ███████╗██╗███████╗██╗░░░░░██████╗░
-               ██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝  ██╔════╝██║██╔════╝██║░░░░░██╔══██╗
-               █████╗░░██║░░██║██████╔╝██║░░╚═╝█████╗░░  █████╗░░██║█████╗░░██║░░░░░██║░░██║
-               ██╔══╝░░██║░░██║██╔══██╗██║░░██╗██╔══╝░░  ██╔══╝░░██║██╔══╝░░██║░░░░░██║░░██║
-               ██║░░░░░╚█████╔╝██║░░██║╚█████╔╝███████╗  ██║░░░░░██║███████╗███████╗██████╔╝
-               ╚═╝░░░░░░╚════╝░╚═╝░░╚═╝░╚════╝░╚══════╝  ╚═╝░░░░░╚═╝╚══════╝╚══════╝╚═════╝░
-
-                           ░██████╗██╗░░██╗░█████╗░██████╗░███████╗██████╗░
-                           ██╔════╝██║░░██║██╔══██╗██╔══██╗██╔════╝██╔══██╗
-                           ╚█████╗░███████║███████║██║░░██║█████╗░░██████╔╝
-                           ░╚═══██╗██╔══██║██╔══██║██║░░██║██╔══╝░░██╔══██╗
-                           ██████╔╝██║░░██║██║░░██║██████╔╝███████╗██║░░██║
-                           ╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝╚═════╝░╚══════╝╚═╝░░╚═╝
-
-                █▀▀▄ █──█ 　 ▀▀█▀▀ █──█ █▀▀ 　 ░█▀▀▄ █▀▀ ▀█─█▀ █▀▀ █── █▀▀█ █▀▀█ █▀▀ █▀▀█ 
-                █▀▀▄ █▄▄█ 　 ─░█── █▀▀█ █▀▀ 　 ░█─░█ █▀▀ ─█▄█─ █▀▀ █── █──█ █──█ █▀▀ █▄▄▀ 
-                ▀▀▀─ ▄▄▄█ 　 ─░█── ▀──▀ ▀▀▀ 　 ░█▄▄▀ ▀▀▀ ──▀── ▀▀▀ ▀▀▀ ▀▀▀▀ █▀▀▀ ▀▀▀ ▀─▀▀
-____________________________________________________________________________________________________________________________________________
-
-        ▄▀█ █▀ █▀ █▀▀ ▀█▀ ▀   █░█ █░░ ▀█▀ █ █▀▄▀█ ▄▀█ ▀█▀ █▀▀   ▄█ █▀█ ▄█▄   █▀ █░█ ▄▀█ █▀▄ █▀▀ █▀█ █▀
-        █▀█ ▄█ ▄█ ██▄ ░█░ ▄   █▄█ █▄▄ ░█░ █ █░▀░█ █▀█ ░█░ ██▄   ░█ █▄█ ░▀░   ▄█ █▀█ █▀█ █▄▀ ██▄ █▀▄ ▄█
-____________________________________________________________________________________________________________________________________________
-License:
-    The license is ATTRIBUTION 3.0
-
-    More license info here:
-        https://creativecommons.org/licenses/by/3.0/
-____________________________________________________________________________________________________________________________________________
-This shader has NOT been tested on any other PC configuration except the following:
-    CPU: Intel Core i5-6400
-    GPU: NVidia GTX 750Ti
-    RAM: 16GB
-    Windows: 10 x64
-    DirectX: 11
-____________________________________________________________________________________________________________________________________________
-*/
-
-Shader "Ultimate 10+ Shaders/Force Field"
+﻿Shader "Teaching/ForceField_Safe"
 {
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        [HDR] _Color ("Color", Color) = (1,1,1,1)
 
-        _FresnelPower("Fresnel Power", Range(0, 10)) = 3
-        _ScrollDirection ("Scroll Direction", float) = (0, 0, 0, 0)
+        // Non-HDR base colour (safe by default)
+        _Color ("Color", Color) = (0.2, 0.6, 1.0, 1.0)
+
+        // Controls brightness safely instead of HDR colour
+        _Intensity ("Intensity", Range(0, 5)) = 1.0
+
+        _FresnelPower ("Fresnel Power", Range(0.1, 8)) = 3.0
+        _ScrollDirection ("Scroll Direction (XY)", Vector) = (0, 0, 0, 0)
     }
+
     SubShader
     {
-        Tags { "RenderType"="Transparent" "IgnoreProjector"="True" "Queue"="Transparent" }
+        Tags
+        {
+            "RenderType"="Transparent"
+            "Queue"="Transparent"
+            "IgnoreProjector"="True"
+        }
+
         Blend SrcAlpha OneMinusSrcAlpha
-        LOD 100
+        ZWrite Off
         Cull Back
         Lighting Off
-        ZWrite On
 
         Pass
         {
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #pragma target 4.0
 
             #include "UnityCG.cginc"
-
-            #ifndef SHADER_API_D3D11
-                #pragma target 3.0
-            #else
-                #pragma target 4.0
-            #endif
 
             struct appdata
             {
                 float4 vertex : POSITION;
-                float2 uv : TEXCOORD0;
-                fixed3 normal : NORMAL;
+                float2 uv     : TEXCOORD0;
+                float3 normal : NORMAL;
             };
 
             struct v2f
             {
-                float2 uv : TEXCOORD0;
-                float rim : TEXCOORD1;
                 float4 position : SV_POSITION;
+                float2 uv       : TEXCOORD0;
+                float  fresnel  : TEXCOORD1;
             };
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
 
-            fixed4 _Color;
-            half _FresnelPower;
-            half2 _ScrollDirection;
+            float4 _Color;
+            float  _Intensity;
+            float  _FresnelPower;
+            float2 _ScrollDirection;
 
-            
-            // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
-            // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
-            // #pragma instancing_options assumeuniformscaling
-            UNITY_INSTANCING_BUFFER_START(Props)
-                // put more per-instance properties here
-            UNITY_INSTANCING_BUFFER_END(Props)
-
-            fixed3 viewDir;
-            v2f vert (appdata vert)
+            v2f vert (appdata v)
             {
-                v2f output;
+                v2f o;
 
-                output.position = UnityObjectToClipPos(vert.vertex);
-                output.uv = TRANSFORM_TEX(vert.uv, _MainTex);
+                o.position = UnityObjectToClipPos(v.vertex);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                o.uv += _ScrollDirection * _Time.y;
 
-                viewDir = normalize(ObjSpaceViewDir(vert.vertex));
-                output.rim = 1.0 - saturate(dot(viewDir, vert.normal));
+                float3 viewDir = normalize(ObjSpaceViewDir(v.vertex));
+                float  ndv = saturate(dot(viewDir, normalize(v.normal)));
 
-                output.uv += _ScrollDirection * _Time.y;
+                // Safe Fresnel (never negative, never >1)
+                o.fresnel = pow(1.0 - ndv, _FresnelPower);
 
-                return output;
+                return o;
             }
 
-            fixed4 pixel;
-            fixed4 frag (v2f input) : SV_Target
+            float4 frag (v2f i) : SV_Target
             {
-                pixel = tex2D(_MainTex, input.uv) * _Color * pow(_FresnelPower, input.rim);
-                pixel = lerp(0, pixel, input.rim);
-                
-                return clamp(pixel, 0, _Color);
+                float4 tex = tex2D(_MainTex, i.uv);
+
+                // Core colour calculation
+                float3 color = tex.rgb * _Color.rgb * i.fresnel * _Intensity;
+
+                // Explicit clamping — critical for GI safety
+                color = saturate(color);
+
+                // Alpha fades with fresnel for force-field feel
+                float alpha = saturate(i.fresnel * _Color.a);
+
+                return float4(color, alpha);
             }
-            ENDCG
+            ENDHLSL
         }
     }
-    FallBack "Diffuse"
 }
